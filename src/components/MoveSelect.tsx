@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DataManager } from '../utils/DataManager';
+import { SearchableSelect } from './SearchableSelect';
 
 interface MoveSelectProps {
     value: number;
@@ -7,7 +8,6 @@ interface MoveSelectProps {
 }
 
 export const MoveSelect: React.FC<MoveSelectProps> = ({ value, onChange }) => {
-    // Native select for performance with large lists
     const dataManager = DataManager.getInstance();
     const [moves, setMoves] = useState<Record<number, string>>({});
 
@@ -21,17 +21,11 @@ export const MoveSelect: React.FC<MoveSelectProps> = ({ value, onChange }) => {
         .sort((a, b) => a.name.localeCompare(b.name));
 
     return (
-        <select
+        <SearchableSelect
+            options={sortedMoves}
             value={value}
-            onChange={(e) => onChange(parseInt(e.target.value))}
+            onChange={onChange}
             style={{ width: '100%' }}
-        >
-            <option value={0}>Nothing</option>
-            {sortedMoves.map((move) => (
-                <option key={move.id} value={move.id}>
-                    {move.name}
-                </option>
-            ))}
-        </select>
+        />
     );
 };

@@ -574,4 +574,54 @@ export class SkySave implements SaveFile {
     public isSecondaryChecksumValid(): boolean {
         return this.secondaryChecksum === this.calculate32BitChecksum(this.bits, this.offsets.BackupSaveStart + 4, this.offsets.BackupSaveStart + this.offsets.ChecksumEnd);
     }
+
+    // --- SYNC LOGIC ---
+
+    public syncPokemonAttributes(source: SkyStoredPokemon | SkyActivePokemon, target: SkyStoredPokemon | SkyActivePokemon): void {
+        // Copy shareable attributes
+        target.nickname = source.nickname;
+        target.level = source.level;
+        target.exp = source.exp;
+        target.iq = source.iq;
+
+        target.hp = source.hp; // For Active, this is CurrentHP. For Stored, it is MaxHP (mostly).
+        // Actually Stored HP is usually MaxHP. Active has Current and Max.
+        // If syncing Stored -> Active: Active.MaxHP = Stored.HP
+        // If syncing Active -> Stored: Stored.HP = Active.MaxHP
+
+        if (target instanceof SkyActivePokemon && source instanceof SkyStoredPokemon) {
+            target.maxHP = source.hp;
+            target.currentHP = source.hp; // Heal on sync? Or keep current? Let's full sync.
+            target.speciesId = source.speciesId;
+            target.attack = source.attack;
+            target.defense = source.defense;
+            target.spAttack = source.spAttack;
+            target.spDefense = source.spDefense;
+            // Moves
+            for (let i = 0; i < 4; i++) {
+                if (i < source.moves.length) {
+                    target.moves[i].id = source.moves[i].id;
+                    target.moves[i].powerBoost = source.moves[i].powerBoost;
+                    // Active moves have PP, stored don't (conceptually). Stored imply max PP?
+                    // We can't easily guess MaxPP without a database.
+                    // For now, keep existing PP or set to arbitrary?
+                    // Let's leave PP alone or set to 0 if ID changed?
+                }
+            }
+        } else if (target instanceof SkyStoredPokemon && source instanceof SkyActivePokemon) {
+            target.hp = source.maxHP;
+            target.speciesId = source.speciesId;
+            target.attack = source.attack;
+            target.defense = source.defense;
+            target.spAttack = source.spAttack;
+            target.spDefense = source.spDefense;
+            // Moves
+            for (let i = 0; i < 4; i++) {
+                if (i < source.moves.length) {
+                    target.moves[i].id = source.moves[i].id;
+                    target.moves[i].powerBoost = source.moves[i].powerBoost;
+                }
+            }
+        }
+    }
 }

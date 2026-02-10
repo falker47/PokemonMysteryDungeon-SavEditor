@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { DataManager } from '../utils/DataManager';
+import { SearchableSelect } from './SearchableSelect';
 
 interface PokemonSelectProps {
     value: number;
@@ -17,17 +18,11 @@ export const PokemonSelect: React.FC<PokemonSelectProps> = ({ value, onChange })
     }, [dataManager.pokemon]);
 
     return (
-        <select
+        <SearchableSelect
+            options={pokemonList}
             value={value}
-            onChange={(e) => onChange(parseInt(e.target.value))}
-            style={{ width: '150px' }}
-        >
-            <option value={0}>Nothing</option>
-            {pokemonList.map(p => (
-                <option key={p.id} value={p.id}>
-                    {p.name} ({p.id})
-                </option>
-            ))}
-        </select>
+            onChange={onChange}
+            style={{ width: '100%' }}
+        />
     );
 };

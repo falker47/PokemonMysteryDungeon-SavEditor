@@ -150,15 +150,15 @@ export const SaveEditor: React.FC = () => {
             </div>
 
             {activeTab === 'general' && (
-                <GeneralTab key={updateKey} save={saveFile} onUpdate={forceUpdate} language={language} />
+                <GeneralTab save={saveFile} onUpdate={forceUpdate} language={language} />
             )}
 
             {activeTab === 'items' && (
-                <ItemsTab key={updateKey} save={saveFile} onUpdate={forceUpdate} language={language} />
+                <ItemsTab save={saveFile} onUpdate={forceUpdate} language={language} />
             )}
 
             {activeTab === 'pokemon' && (
-                <PokemonTab key={updateKey} save={saveFile} onUpdate={forceUpdate} language={language} />
+                <PokemonTab save={saveFile} onUpdate={forceUpdate} language={language} />
             )}
         </div>
     );

@@ -18,6 +18,10 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
     const [mode, setMode] = useState<'recruited' | 'active' | 'special'>('recruited');
     const [selectedStored, setSelectedStored] = useState<GenericPokemon | null>(null);
     const [selectedActive, setSelectedActive] = useState<GenericPokemon | null>(null);
+
+    // Auto-Sync state (lifted so it persists across tab switches if desired, though here it resets)
+    const [autoSync, setAutoSync] = useState(true);
+
     const [page, setPage] = useState(0);
     const itemsPerPage = 50;
     const dataManager = DataManager.getInstance();
@@ -35,12 +39,31 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
 
     const renderList = () => {
         if (mode === 'recruited') {
-            const paginatedPokemon = save.storedPokemon.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
-            const totalPages = Math.ceil(save.storedPokemon.length / itemsPerPage);
+            // Filter out Special Episode Pokemon from the main Recruited list?
+            // The user said: "display pokemons of special episode just in their dedicated tab and not on 'recruited'"
+            // This implies we need to know WHICH stored pokemon are "Special Episode" ones.
+            // Hypothesis: They are the ones referenced by spEpisodeActivePokemon.
+            // But what about the ones RECRUITED during a special episode but not currently in party?
+            // Without a clear flag, we can only reliably identify those currently IN the special party.
+            // Let's assume for now we filter out those that are currently in the Special Episode Party.
+
+            const spActiveIndices = new Set<number>();
+            if (skySave) {
+                skySave.spEpisodeActivePokemon.forEach(p => {
+                    if (p.isValid && p.rosterNumber >= 0) spActiveIndices.add(p.rosterNumber);
+                });
+            }
+
+            // Filter storedPokemon to exclude those in Special Episode Party
+            const filteredStored = save.storedPokemon.map((p, i) => ({ pkm: p, index: i }))
+                .filter(({ index }) => !spActiveIndices.has(index));
+
+            const paginatedPokemon = filteredStored.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
+            const totalPages = Math.ceil(filteredStored.length / itemsPerPage);
 
             return (
                 <>
-                    <h2>{t('StoredPokemon')} ({save.storedPokemon.length})</h2>
+                    <h2>{t('StoredPokemon')} ({filteredStored.length})</h2>
                     <div style={{ overflowY: 'auto', flex: 1 }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
@@ -49,31 +72,42 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
                                     <th>Name</th>
                                     <th>Lvl</th>
                                     <th>Species</th>
+                                    <th>Status</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {paginatedPokemon.map((pkm, idx) => (
-                                    <tr key={idx} style={{ borderBottom: '1px solid #333' }}>
-                                        <td>{page * itemsPerPage + idx + 1}</td>
-                                        <td>{pkm.isValid ? pkm.nickname : '---'}</td>
-                                        <td>{pkm.isValid ? pkm.level : '-'}</td>
-                                        <td>
-                                            {pkm.isValid
-                                                ? `${dataManager.getPokemonName(pkm.speciesId)}`
-                                                : '-'
-                                            }
-                                        </td>
-                                        <td>
-                                            <button
-                                                style={{ padding: '2px 5px', fontSize: '0.8em' }}
-                                                onClick={() => setSelectedStored(pkm)}
-                                            >
-                                                Edit
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {paginatedPokemon.map(({ pkm, index }) => {
+                                    // Check if active in Main
+                                    let status = "";
+                                    if (skySave) {
+                                        const isMainActive = skySave.activePokemon.some(p => p.isValid && p.rosterNumber === index);
+                                        if (isMainActive) status = "Player";
+                                    }
+
+                                    return (
+                                        <tr key={index} style={{ borderBottom: '1px solid #333' }}>
+                                            <td>{index + 1}</td>
+                                            <td>{pkm.isValid ? pkm.nickname : '---'}</td>
+                                            <td>{pkm.isValid ? pkm.level : '-'}</td>
+                                            <td>
+                                                {pkm.isValid
+                                                    ? `${dataManager.getPokemonName(pkm.speciesId)}`
+                                                    : '-'
+                                                }
+                                            </td>
+                                            <td style={{ fontSize: '0.8em', color: '#88ff88' }}>{status}</td>
+                                            <td>
+                                                <button
+                                                    style={{ padding: '2px 5px', fontSize: '0.8em' }}
+                                                    onClick={() => setSelectedStored(pkm)}
+                                                >
+                                                    Edit
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -86,6 +120,7 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
             );
         } else {
             const isRB = save.gameType === 'RescueTeam';
+            // Show Special Episode Party
             const list = mode === 'active' ? (save.activePokemon || []) : (skySave ? skySave.spEpisodeActivePokemon : []);
 
             if (mode === 'active' && isRB) {
@@ -107,6 +142,7 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
                                     <th>Name</th>
                                     <th>Lvl</th>
                                     <th>Species</th>
+                                    {mode === 'special' && <th>Roster ID</th>}
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -122,6 +158,9 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
                                                 : '-'
                                             }
                                         </td>
+                                        {mode === 'special' && (
+                                            <td style={{ fontSize: '0.8em' }}>{(pkm as any).rosterNumber}</td>
+                                        )}
                                         <td>
                                             <button
                                                 style={{ padding: '2px 5px', fontSize: '0.8em' }}
@@ -155,11 +194,32 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
 
             <div className="card" style={{ flex: 1 }}>
                 <h2>Edit Pokemon</h2>
+                <div style={{ marginBottom: '10px' }}>
+                    <label title="Automatically updates Recruited/Active copies when you edit">
+                        <input type="checkbox" checked={autoSync} onChange={e => setAutoSync(e.target.checked)} />
+                        Auto-Sync Recruited & Active
+                    </label>
+                </div>
+
                 {mode === 'recruited' && selectedStored && (
-                    <GenericPokemonEditor pokemon={selectedStored} onUpdate={onUpdate} isSky={isSky} />
+                    <GenericPokemonEditor
+                        pokemon={selectedStored}
+                        save={save}
+                        onUpdate={onUpdate}
+                        isSky={isSky}
+                        autoSync={autoSync}
+                        mode="recruited"
+                    />
                 )}
                 {(mode === 'active' || mode === 'special') && selectedActive && (
-                    <GenericPokemonEditor pokemon={selectedActive} onUpdate={onUpdate} isSky={isSky} />
+                    <GenericPokemonEditor
+                        pokemon={selectedActive}
+                        save={save}
+                        onUpdate={onUpdate}
+                        isSky={isSky}
+                        autoSync={autoSync}
+                        mode={mode}
+                    />
                 )}
                 {((mode === 'recruited' && !selectedStored) || ((mode !== 'recruited') && !selectedActive)) && (
                     <p>Select a Pokemon to edit.</p>
@@ -171,15 +231,52 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
 
 interface GenericPokemonEditorProps {
     pokemon: GenericPokemon;
+    save: SaveFile; // Added save to access sync methods
     onUpdate: () => void;
     isSky: boolean;
+    autoSync: boolean;
+    mode: 'recruited' | 'active' | 'special';
 }
 
-const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, onUpdate, isSky }) => {
+const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, save, onUpdate, isSky, autoSync, mode }) => {
     // Helper to cast to SkyStoredPokemon for Sky-specific fields
     const skyPokemon = isSky ? (pokemon as any) : null;
-    // Using any for casting to access specific fields if we know they exist. 
-    // Better would be to have discriminating union or type guard.
+
+    const handleUpdate = () => {
+        if (isSky && autoSync && (save as SkySave).syncPokemonAttributes) {
+            const skySave = save as SkySave;
+            // SYNC LOGIC
+            if (mode === 'recruited') {
+                // Sync Stored -> Active
+                // We need to find the index of this pokemon in stored list
+                const storedIndex = skySave.storedPokemon.indexOf(pokemon as any);
+                if (storedIndex !== -1) {
+                    // Find active pokemon with this roster number
+                    skySave.activePokemon.forEach(p => {
+                        if (p.rosterNumber === storedIndex && p.isValid) {
+                            skySave.syncPokemonAttributes(pokemon as any, p);
+                        }
+                    });
+                    skySave.spEpisodeActivePokemon.forEach(p => {
+                        if (p.rosterNumber === storedIndex && p.isValid) {
+                            skySave.syncPokemonAttributes(pokemon as any, p);
+                        }
+                    });
+                }
+            } else {
+                // Sync Active -> Stored
+                // We assume active pokemon has a rosterNumber pointing to stored
+                const active = pokemon as any; // SkyActivePokemon
+                if (active.rosterNumber !== undefined && active.rosterNumber >= 0 && active.rosterNumber < skySave.storedPokemon.length) {
+                    const target = skySave.storedPokemon[active.rosterNumber];
+                    if (target && target.isValid) {
+                        skySave.syncPokemonAttributes(active, target);
+                    }
+                }
+            }
+        }
+        onUpdate();
+    };
 
     return (
         <div>
@@ -190,7 +287,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                         checked={pokemon.isValid}
                         onChange={(e) => {
                             pokemon.isValid = e.target.checked;
-                            onUpdate();
+                            handleUpdate();
                         }}
                     />
                     Is Valid
@@ -207,7 +304,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                             value={pokemon.nickname}
                             onChange={(e) => {
                                 pokemon.nickname = e.target.value;
-                                onUpdate();
+                                handleUpdate();
                             }}
                         />
                     </div>
@@ -218,7 +315,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                             value={pokemon.speciesId}
                             onChange={(val) => {
                                 pokemon.speciesId = val;
-                                onUpdate();
+                                handleUpdate();
                             }}
                         />
                     </div>
@@ -231,7 +328,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                                     checked={skyPokemon.id.isFemale}
                                     onChange={(e: any) => {
                                         skyPokemon.id.isFemale = e.target.checked;
-                                        onUpdate();
+                                        handleUpdate();
                                     }}
                                 />
                                 Is Female
@@ -248,7 +345,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                             value={pokemon.level}
                             onChange={(e) => {
                                 pokemon.level = parseInt(e.target.value) || 1;
-                                onUpdate();
+                                handleUpdate();
                             }}
                         />
                     </div>
@@ -260,7 +357,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                             value={pokemon.exp}
                             onChange={(e) => {
                                 pokemon.exp = parseInt(e.target.value) || 0;
-                                onUpdate();
+                                handleUpdate();
                             }}
                         />
                     </div>
@@ -274,7 +371,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                                 value={pokemon.hp}
                                 onChange={(e) => {
                                     pokemon.hp = parseInt(e.target.value) || 0;
-                                    onUpdate();
+                                    handleUpdate();
                                 }}
                             />
                         </div>
@@ -287,7 +384,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                                     value={pokemon.maxHP}
                                     onChange={(e) => {
                                         pokemon.maxHP = parseInt(e.target.value) || 0;
-                                        onUpdate();
+                                        handleUpdate();
                                     }}
                                 />
                             </div>
@@ -302,7 +399,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                                 value={pokemon.attack}
                                 onChange={(e) => {
                                     pokemon.attack = parseInt(e.target.value) || 0;
-                                    onUpdate();
+                                    handleUpdate();
                                 }}
                             />
                         </div>
@@ -314,7 +411,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                                 value={pokemon.defense}
                                 onChange={(e) => {
                                     pokemon.defense = parseInt(e.target.value) || 0;
-                                    onUpdate();
+                                    handleUpdate();
                                 }}
                             />
                         </div>
@@ -326,7 +423,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                                 value={pokemon.spAttack}
                                 onChange={(e) => {
                                     pokemon.spAttack = parseInt(e.target.value) || 0;
-                                    onUpdate();
+                                    handleUpdate();
                                 }}
                             />
                         </div>
@@ -338,7 +435,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                                 value={pokemon.spDefense}
                                 onChange={(e) => {
                                     pokemon.spDefense = parseInt(e.target.value) || 0;
-                                    onUpdate();
+                                    handleUpdate();
                                 }}
                             />
                         </div>
@@ -351,7 +448,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                             value={pokemon.iq}
                             onChange={(e) => {
                                 pokemon.iq = parseInt(e.target.value) || 0;
-                                onUpdate();
+                                handleUpdate();
                             }}
                         />
                     </div>
@@ -364,7 +461,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                                 value={pokemon.metAt}
                                 onChange={(e) => {
                                     pokemon.metAt = parseInt(e.target.value) || 0;
-                                    onUpdate();
+                                    handleUpdate();
                                 }}
                             />
                         </div>
@@ -381,7 +478,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                                             value={move.id}
                                             onChange={(val) => {
                                                 move.id = val;
-                                                onUpdate();
+                                                handleUpdate();
                                             }}
                                         />
                                     </div>
@@ -394,7 +491,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, on
                                             value={move.powerBoost || 0}
                                             onChange={(e) => {
                                                 move.powerBoost = parseInt(e.target.value) || 0;
-                                                onUpdate();
+                                                handleUpdate();
                                             }}
                                             style={{ width: '100%' }}
                                             placeholder="+0"
