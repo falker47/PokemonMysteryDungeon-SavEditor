@@ -384,15 +384,15 @@ export class RBSave implements SaveFile {
         // Stride is likely consistent.
         // We allow a search window for the stride: [16 bits to 48 bits]
 
-        const validStrides = new Map<number, number>(); // Stride -> Count
+        // const validStrides = new Map<number, number>(); // Stride -> Count
 
         const startOffsets = idBitOffsets[0];
 
         for (const start of startOffsets) {
             // Can we find the next ID within window?
             let currentPos = start;
-            let currentStride = 0;
-            let chainFound = true;
+            //   let currentStride = 0;
+            //   let chainFound = true;
 
             // Try to find the SECOND item to establish a stride
             const nextOffsets = idBitOffsets[1];

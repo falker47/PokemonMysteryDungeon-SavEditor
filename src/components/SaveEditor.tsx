@@ -14,7 +14,7 @@ export const SaveEditor: React.FC = () => {
     const [saveFile, setSaveFile] = useState<SaveFile | null>(null);
     const [fileName, setFileName] = useState<string>("");
     const [activeTab, setActiveTab] = useState<string>('general');
-    const [updateKey, setUpdateKey] = useState<number>(0);
+    const [, setUpdateKey] = useState<number>(0);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [language, setLanguage] = useState(localStorage.getItem('pmd-save-editor-language') || 'en');
     const { t } = useTranslation(language);
