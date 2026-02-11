@@ -31,11 +31,12 @@
     "OriginalPartnerGeneric": "Info Partner Orig.",
     "PlayTime": "Tempo di Gioco",
     "BaseType": "Tipo Base",
-    "DragDropInstruction": "Trascina e rilascia il tuo file .sav qui o clicca per caricare",
+    "DragDropInstruction": "Clicca o trascina e rilascia il tuo file .sav qui per caricare",
     "SupportedFormats": "Supporta: Pokémon Mystery Dungeon: Esploratori del Tempo, dell'Oscurità e del Cielo",
     "FeaturesTitle": "Funzionalità:",
     "Feature1": "Modifica Nome Squadra, Soldi e Punti Esplorazione",
     "Feature2": "Gestisci Strumenti e Deposito",
     "Feature3": "Modifica Statistiche, Mosse e QI dei Pokémon",
-    "BackupWarning": "Fai sempre un backup del file di salvataggio prima di modificare!"
+    "BackupWarning": "Fai sempre un backup del file di salvataggio prima di modificare!",
+    "EditPokemon": "Modifica Pokémon"
 }

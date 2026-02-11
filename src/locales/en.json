@@ -31,11 +31,12 @@
     "OriginalPartnerGeneric": "Original Partner Info",
     "PlayTime": "Play Time",
     "BaseType": "Base Type",
-    "DragDropInstruction": "Drag & Drop your .sav file here or click to upload",
+    "DragDropInstruction": "Click or drag & drop your .sav file here to upload",
     "SupportedFormats": "Supports: Pokémon Mystery Dungeon: Explorers of Time, Darkness, and Sky",
     "FeaturesTitle": "Features:",
     "Feature1": "Edit Team Name, Money, and Points",
     "Feature2": "Manage Inventory and Storage",
     "Feature3": "Edit Pokémon Stats, Moves, and IQ",
-    "BackupWarning": "⚠️ Always backup your save file before editing!"
+    "BackupWarning": "Always backup your save file before editing!",
+    "EditPokemon": "Edit Pokémon"
 }

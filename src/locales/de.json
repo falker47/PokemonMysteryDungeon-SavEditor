@@ -37,5 +37,6 @@
     "Feature1": "Bearbeite Teamname, Geld und Punkte",
     "Feature2": "Verwalte Inventar und Lager",
     "Feature3": "Bearbeite Pokémon-Werte, Attacken und IQ",
-    "BackupWarning": "Mache immer ein Backup deiner Speicherdatei vor dem Bearbeiten!"
+    "BackupWarning": "Mache immer ein Backup deiner Speicherdatei vor dem Bearbeiten!",
+    "EditPokemon": "Pokémon bearbeiten"
 }

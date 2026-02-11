@@ -37,5 +37,6 @@
     "Feature1": "Modifiez le Nom de l'Équipe, l'Argent et les Points",
     "Feature2": "Gérez l'Inventaire et le Stockage",
     "Feature3": "Modifiez les Stats, Capacités et QI des Pokémon",
-    "BackupWarning": "Faites toujours une sauvegarde de votre fichier de sauvegarde avant de modifier !"
+    "BackupWarning": "Faites toujours une sauvegarde de votre fichier de sauvegarde avant de modifier !",
+    "EditPokemon": "Modifier Pokémon"
 }

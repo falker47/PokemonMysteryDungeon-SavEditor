@@ -58,7 +58,7 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
 
             return (
                 <>
-                    <h2>{t('StoredPokemon')} ({filteredStored.length})</h2>
+                    <h2 style={{ fontSize: '1.2rem', marginBottom: '0.3em' }}>{t('StoredPokemon')} ({filteredStored.length})</h2>
                     <div style={{ flex: 1, overflowY: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
@@ -88,7 +88,7 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
                                     }
 
                                     return (
-                                        <tr key={index} style={{ borderBottom: '1px solid #333' }}>
+                                        <tr key={index} style={{ borderBottom: '1px solid #333', height: '32px' }}>
                                             <td>{index + 1}</td>
                                             <td>{pkm.isValid ? pkm.nickname : '---'}</td>
                                             <td>{pkm.isValid ? pkm.level : '-'}</td>
@@ -131,7 +131,7 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
 
             return (
                 <>
-                    <h2>{mode === 'active' ? t('ActivePokemonHeader') : t('SpEpisodeParty')} ({list.length})</h2>
+                    <h2 style={{ fontSize: '1.2rem', marginBottom: '0.3em' }}>{mode === 'active' ? t('ActivePokemonHeader') : t('SpEpisodeParty')} ({list.length})</h2>
                     <div style={{ flex: 1, overflowY: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
@@ -146,7 +146,7 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
                             </thead>
                             <tbody>
                                 {list.map((pkm, idx) => (
-                                    <tr key={idx} style={{ borderBottom: '1px solid #333' }}>
+                                    <tr key={idx} style={{ borderBottom: '1px solid #333', height: '32px' }}>
                                         <td>{idx + 1}</td>
                                         <td>{pkm.isValid ? pkm.nickname : '---'}</td>
                                         <td>{pkm.isValid ? pkm.level : '-'}</td>
@@ -179,7 +179,7 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5em', height: 'calc(100vh - 160px)' }}>
-            <div className="card" style={{ flex: 5, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 0 }}>
+            <div className="card" style={{ flex: 4, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 0 }}>
                 <div style={{ display: 'flex', gap: '5px', marginBottom: '5px', flexWrap: 'wrap' }}>
                     <button style={{ padding: '0.2em 0.5em', fontSize: '0.9em' }} disabled={mode === 'recruited'} onClick={() => handleModeChange('recruited')}>Recruited</button>
                     <button style={{ padding: '0.2em 0.5em', fontSize: '0.9em' }} disabled={mode === 'active'} onClick={() => handleModeChange('active')}>Active Team</button>
@@ -190,8 +190,8 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
                 {renderList()}
             </div>
 
-            <div className="card" style={{ flex: 5, minHeight: 0, overflowY: 'auto', marginBottom: 0 }}>
-                <h2 style={{ fontSize: '1.2rem', marginBottom: '0.5em' }}>Edit Pokemon</h2>
+            <div className="card" style={{ flex: 6, minHeight: 0, overflowY: 'auto', marginBottom: 0 }}>
+                <h2 style={{ fontSize: '1.2rem', marginBottom: '0.5em' }}>{t('EditPokemon')}</h2>
 
                 {mode === 'recruited' && selectedStored && (
                     <GenericPokemonEditor

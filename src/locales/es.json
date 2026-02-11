@@ -37,5 +37,6 @@
     "Feature1": "Edita Nombre del Equipo, Dinero y Puntos",
     "Feature2": "Gestiona Inventario y Almacenamiento",
     "Feature3": "Edita Estadísticas, Movimientos y CI de Pokémon",
-    "BackupWarning": "¡Haz siempre una copia de seguridad de tu partida antes de editar!"
+    "BackupWarning": "¡Haz siempre una copia de seguridad de tu partida antes de editar!",
+    "EditPokemon": "Editar Pokémon"
 }
