@@ -103,6 +103,16 @@ export const SaveEditor: React.FC = () => {
 
     const forceUpdate = () => setUpdateKey(prev => prev + 1);
 
+    const handleUnload = () => {
+        setSaveFile(null);
+        setFileName("");
+        setActiveTab('general');
+        setUpdateKey(0);
+        // We don't necessarily need to reset dataLoaded or empty DataManager, 
+        // as the language/resources might still be valid. 
+        // But let's keep it simple.
+    };
+
     if (!saveFile) {
         return <FileUpload onFileLoaded={handleFileLoaded} />;
     }
@@ -114,7 +124,15 @@ export const SaveEditor: React.FC = () => {
     return (
         <div>
             <div className="card">
-                <h2>Editing: {fileName}</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #646cff', paddingBottom: '0.5em', marginBottom: '1em' }}>
+                    <h2 style={{ margin: 0, border: 'none', padding: 0 }}>Editing: {fileName}</h2>
+                    <button
+                        onClick={handleUnload}
+                        style={{ backgroundColor: '#d32f2f', color: 'white' }}
+                    >
+                        Go Back
+                    </button>
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <div className="tabs">
                         <div
