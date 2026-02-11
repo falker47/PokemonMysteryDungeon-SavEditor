@@ -19,8 +19,8 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
     const [selectedStored, setSelectedStored] = useState<GenericPokemon | null>(null);
     const [selectedActive, setSelectedActive] = useState<GenericPokemon | null>(null);
 
-    // Auto-Sync state (lifted so it persists across tab switches if desired, though here it resets)
-    const [autoSync, setAutoSync] = useState(true);
+    // Auto-Sync state (forced to true as requested)
+    const [autoSync] = useState(true);
 
     const [page, setPage] = useState(0);
     const itemsPerPage = 50;
@@ -201,12 +201,6 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
 
             <div className="card" style={{ height: '360px', maxHeight: '36vh', overflowY: 'auto' }}>
                 <h2>Edit Pokemon</h2>
-                <div style={{ marginBottom: '10px' }}>
-                    <label title="Automatically updates Recruited/Active copies when you edit">
-                        <input type="checkbox" checked={autoSync} onChange={e => setAutoSync(e.target.checked)} />
-                        Auto-Sync Recruited & Active
-                    </label>
-                </div>
 
                 {mode === 'recruited' && selectedStored && (
                     <GenericPokemonEditor
@@ -250,6 +244,9 @@ const isTimeDarkness = (save: SaveFile) => save.gameType === 'TimeDarkness';
 const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, save, onUpdate, isSky, autoSync, mode }) => {
 
     const handleUpdate = () => {
+        // Automatically make pokemon valid if edited
+        pokemon.isValid = true;
+
         if (isSky && autoSync && (save as SkySave).syncPokemonAttributes) {
             const skySave = save as SkySave;
             // SYNC LOGIC
@@ -287,234 +284,207 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, sa
 
     return (
         <div>
-            <div className="form-group">
-                <label>
+
+            <>
+                <div className="form-group">
+                    <label>Nickname</label>
                     <input
-                        type="checkbox"
-                        checked={pokemon.isValid}
+                        type="text"
+                        maxLength={10}
+                        value={pokemon.nickname}
                         onChange={(e) => {
-                            pokemon.isValid = e.target.checked;
+                            pokemon.nickname = e.target.value;
                             handleUpdate();
                         }}
                     />
-                    Is Valid
-                </label>
-            </div>
+                </div>
 
-            {pokemon.isValid && (
-                <>
+                <div className="form-group">
+                    <label>Species</label>
+                    <PokemonSelect
+                        value={pokemon.speciesId}
+                        onChange={(val) => {
+                            pokemon.speciesId = val;
+                            handleUpdate();
+                        }}
+                    />
+                </div>
+
+                {pokemon.isFemale !== undefined && (
                     <div className="form-group">
-                        <label>Nickname</label>
-                        <input
-                            type="text"
-                            maxLength={10}
-                            value={pokemon.nickname}
-                            onChange={(e) => {
-                                pokemon.nickname = e.target.value;
-                                handleUpdate();
-                            }}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Species</label>
-                        <PokemonSelect
-                            value={pokemon.speciesId}
-                            onChange={(val) => {
-                                pokemon.speciesId = val;
-                                handleUpdate();
-                            }}
-                        />
-                    </div>
-
-                    {pokemon.isFemale !== undefined && (
-                        <div className="form-group">
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={pokemon.isFemale}
-                                    onChange={(e) => {
-                                        if (pokemon.isFemale !== undefined) {
-                                            pokemon.isFemale = e.target.checked;
-                                            handleUpdate();
-                                        }
-                                    }}
-                                />
-                                Is Female
-                            </label>
-                        </div>
-                    )}
-
-                    <div className="form-group">
-                        <label>Level</label>
-                        <input
-                            type="number"
-                            min={1}
-                            max={100}
-                            value={pokemon.level}
-                            onChange={(e) => {
-                                pokemon.level = parseInt(e.target.value) || 1;
-                                handleUpdate();
-                            }}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Experience</label>
-                        <input
-                            type="number"
-                            value={pokemon.exp}
-                            onChange={(e) => {
-                                pokemon.exp = parseInt(e.target.value) || 0;
-                                handleUpdate();
-                            }}
-                        />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
-                        <div className="form-group">
-                            <label>HP / Max</label>
+                        <label>
                             <input
-                                type="number"
-                                style={{ width: '60px' }}
-                                value={pokemon.hp}
+                                type="checkbox"
+                                checked={pokemon.isFemale}
                                 onChange={(e) => {
-                                    pokemon.hp = parseInt(e.target.value) || 0;
-                                    handleUpdate();
-                                }}
-                            />
-                        </div>
-                        {pokemon.maxHP !== undefined && (
-                            <div className="form-group">
-                                <label>Max HP</label>
-                                <input
-                                    type="number"
-                                    style={{ width: '60px' }}
-                                    value={pokemon.maxHP}
-                                    onChange={(e) => {
-                                        pokemon.maxHP = parseInt(e.target.value) || 0;
+                                    if (pokemon.isFemale !== undefined) {
+                                        pokemon.isFemale = e.target.checked;
                                         handleUpdate();
-                                    }}
-                                />
-                            </div>
-                        )}
+                                    }
+                                }}
+                            />
+                            Is Female
+                        </label>
                     </div>
-                    <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
-                        <div className="form-group">
-                            <label>Atk</label>
-                            <input
-                                type="number"
-                                style={{ width: '50px' }}
-                                value={pokemon.attack}
-                                onChange={(e) => {
-                                    pokemon.attack = parseInt(e.target.value) || 0;
-                                    handleUpdate();
-                                }}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Def</label>
-                            <input
-                                type="number"
-                                style={{ width: '50px' }}
-                                value={pokemon.defense}
-                                onChange={(e) => {
-                                    pokemon.defense = parseInt(e.target.value) || 0;
-                                    handleUpdate();
-                                }}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Sp.Atk</label>
-                            <input
-                                type="number"
-                                style={{ width: '50px' }}
-                                value={pokemon.spAttack}
-                                onChange={(e) => {
-                                    pokemon.spAttack = parseInt(e.target.value) || 0;
-                                    handleUpdate();
-                                }}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Sp.Def</label>
-                            <input
-                                type="number"
-                                style={{ width: '50px' }}
-                                value={pokemon.spDefense}
-                                onChange={(e) => {
-                                    pokemon.spDefense = parseInt(e.target.value) || 0;
-                                    handleUpdate();
-                                }}
-                            />
-                        </div>
-                    </div>
+                )}
 
+                <div className="form-group">
+                    <label>Level</label>
+                    <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={pokemon.level}
+                        onChange={(e) => {
+                            pokemon.level = parseInt(e.target.value) || 1;
+                            handleUpdate();
+                        }}
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label>Experience</label>
+                    <input
+                        type="number"
+                        value={pokemon.exp}
+                        onChange={(e) => {
+                            pokemon.exp = parseInt(e.target.value) || 0;
+                            handleUpdate();
+                        }}
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label>HP</label>
+                    <input
+                        type="number"
+                        style={{ width: '60px' }}
+                        value={pokemon.hp}
+                        onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            pokemon.hp = val;
+                            if (pokemon.maxHP !== undefined) {
+                                pokemon.maxHP = val;
+                            }
+                            handleUpdate();
+                        }}
+                    />
+                </div>
+                <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
                     <div className="form-group">
-                        <label>IQ</label>
+                        <label>Atk</label>
                         <input
                             type="number"
-                            value={pokemon.iq}
+                            style={{ width: '50px' }}
+                            value={pokemon.attack}
                             onChange={(e) => {
-                                pokemon.iq = parseInt(e.target.value) || 0;
+                                pokemon.attack = parseInt(e.target.value) || 0;
                                 handleUpdate();
                             }}
                         />
                     </div>
-
-                    {pokemon.metAt !== undefined && !isTimeDarkness(save) && (
-                        <div className="form-group">
-                            <label>Met At (Location ID)</label>
-                            <input
-                                type="number"
-                                value={pokemon.metAt}
-                                onChange={(e) => {
-                                    pokemon.metAt = parseInt(e.target.value) || 0;
-                                    handleUpdate();
-                                }}
-                            />
-                        </div>
-                    )}
-
-                    <h3>Moves</h3>
-                    <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1em' }}>
-                        {pokemon.moves.map((move, idx) => (
-                            <div key={idx} className="form-group">
-                                <label>Move {idx + 1}</label>
-                                <div style={{ display: 'flex', gap: '0.5em' }}>
-                                    <div style={{ flex: 3 }}>
-                                        <MoveSelect
-                                            value={move.id}
-                                            onChange={(val) => {
-                                                move.id = val;
-                                                handleUpdate();
-                                            }}
-                                        />
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <label style={{ fontSize: '0.8em' }}>Ginseng</label>
-                                        <input
-                                            type="number"
-                                            min={0}
-                                            max={99}
-                                            value={move.powerBoost || 0}
-                                            onChange={(e) => {
-                                                move.powerBoost = parseInt(e.target.value) || 0;
-                                                handleUpdate();
-                                            }}
-                                            style={{ width: '100%' }}
-                                            placeholder="+0"
-                                        />
-                                    </div>
-                                </div>
-                                {move.pp !== undefined && (
-                                    <div>PP: {move.pp}</div>
-                                )}
-                            </div>
-                        ))}
+                    <div className="form-group">
+                        <label>Def</label>
+                        <input
+                            type="number"
+                            style={{ width: '50px' }}
+                            value={pokemon.defense}
+                            onChange={(e) => {
+                                pokemon.defense = parseInt(e.target.value) || 0;
+                                handleUpdate();
+                            }}
+                        />
                     </div>
-                </>
-            )}
+                    <div className="form-group">
+                        <label>Sp.Atk</label>
+                        <input
+                            type="number"
+                            style={{ width: '50px' }}
+                            value={pokemon.spAttack}
+                            onChange={(e) => {
+                                pokemon.spAttack = parseInt(e.target.value) || 0;
+                                handleUpdate();
+                            }}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Sp.Def</label>
+                        <input
+                            type="number"
+                            style={{ width: '50px' }}
+                            value={pokemon.spDefense}
+                            onChange={(e) => {
+                                pokemon.spDefense = parseInt(e.target.value) || 0;
+                                handleUpdate();
+                            }}
+                        />
+                    </div>
+                </div>
+
+                <div className="form-group">
+                    <label>IQ</label>
+                    <input
+                        type="number"
+                        value={pokemon.iq}
+                        onChange={(e) => {
+                            pokemon.iq = parseInt(e.target.value) || 0;
+                            handleUpdate();
+                        }}
+                    />
+                </div>
+
+                {pokemon.metAt !== undefined && !isTimeDarkness(save) && (
+                    <div className="form-group">
+                        <label>Met At</label>
+                        <input
+                            type="number"
+                            value={pokemon.metAt}
+                            onChange={(e) => {
+                                pokemon.metAt = parseInt(e.target.value) || 0;
+                                handleUpdate();
+                            }}
+                        />
+                    </div>
+                )}
+
+                <h3>Moves</h3>
+                <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1em' }}>
+                    {pokemon.moves.map((move, idx) => (
+                        <div key={idx} className="form-group">
+                            <label>Move {idx + 1}</label>
+                            <div style={{ display: 'flex', gap: '0.5em' }}>
+                                <div style={{ flex: 3 }}>
+                                    <MoveSelect
+                                        value={move.id}
+                                        onChange={(val) => {
+                                            move.id = val;
+                                            handleUpdate();
+                                        }}
+                                    />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '0.8em' }}>Ginseng</label>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={99}
+                                        value={move.powerBoost || 0}
+                                        onChange={(e) => {
+                                            move.powerBoost = parseInt(e.target.value) || 0;
+                                            handleUpdate();
+                                        }}
+                                        style={{ width: '100%' }}
+                                        placeholder="+0"
+                                    />
+                                </div>
+                            </div>
+                            {move.pp !== undefined && (
+                                <div>PP: {move.pp}</div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </>
         </div>
     );
 };
