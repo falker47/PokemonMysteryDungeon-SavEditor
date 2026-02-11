@@ -46,7 +46,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({ save, onUpdate, language }) 
                 )}
             </div>
 
-            <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
+            <div className="tab-content">
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr style={{ textAlign: 'left', borderBottom: '1px solid #555' }}>

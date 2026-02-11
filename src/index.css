@@ -133,3 +133,68 @@ button:hover {
 .file-upload:hover {
     border-color: #646cff;
 }
+
+@media (max-width: 768px) {
+    body {
+        place-items: flex-start;
+        padding-top: 10px;
+    }
+
+    #root {
+        padding: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    .card {
+        padding: 1rem;
+    }
+
+    .tabs {
+        flex-wrap: wrap;
+    }
+
+    .tab {
+        flex: 1 1 auto;
+        text-align: center;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+    }
+
+    /* Adjust table fonts for mobile */
+    table {
+        font-size: 0.8rem;
+    }
+
+    th,
+    td {
+        padding: 4px;
+    }
+
+
+    /* Stack flex containers that are explicitly row on desktop but need column on mobile */
+    .mobile-stack {
+        flex-direction: column !important;
+    }
+
+    .responsive-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .responsive-flex {
+        flex-wrap: wrap;
+    }
+}
+
+.tab-content {
+    height: 600px;
+    max-height: 60vh;
+    /* On smaller screens, take up to 60% of view */
+    overflow-y: auto;
+    /* Ensure it has a bit of padding to not cut off scrollbars visually if needed */
+    padding-right: 5px;
+}

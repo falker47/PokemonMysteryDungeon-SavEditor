@@ -64,7 +64,7 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
             return (
                 <>
                     <h2>{t('StoredPokemon')} ({filteredStored.length})</h2>
-                    <div style={{ overflowY: 'auto', flex: 1 }}>
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ textAlign: 'left', borderBottom: '1px solid #555' }}>
@@ -141,7 +141,7 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
             return (
                 <>
                     <h2>{mode === 'active' ? t('ActivePokemonHeader') : t('SpEpisodeParty')} ({list.length})</h2>
-                    <div style={{ overflowY: 'auto', flex: 1 }}>
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ textAlign: 'left', borderBottom: '1px solid #555' }}>
@@ -187,9 +187,9 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
     };
 
     return (
-        <div style={{ display: 'flex', gap: '1em' }}>
-            <div className="card" style={{ flex: 1, maxHeight: '600px', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', gap: '5px', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1em' }}>
+            <div className="card" style={{ height: '240px', maxHeight: '24vh', display: 'flex', flexDirection: 'column', minWidth: '0', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', gap: '5px', marginBottom: '10px', flexWrap: 'wrap' }}>
                     <button disabled={mode === 'recruited'} onClick={() => handleModeChange('recruited')}>Recruited</button>
                     <button disabled={mode === 'active'} onClick={() => handleModeChange('active')}>Active Team</button>
                     {isSky && (
@@ -197,10 +197,9 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
                     )}
                 </div>
                 {renderList()}
-
             </div>
 
-            <div className="card" style={{ flex: 1 }}>
+            <div className="card" style={{ height: '360px', maxHeight: '36vh', overflowY: 'auto' }}>
                 <h2>Edit Pokemon</h2>
                 <div style={{ marginBottom: '10px' }}>
                     <label title="Automatically updates Recruited/Active copies when you edit">
@@ -372,7 +371,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, sa
                         />
                     </div>
 
-                    <div style={{ display: 'flex', gap: '1em' }}>
+                    <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
                         <div className="form-group">
                             <label>HP / Max</label>
                             <input
@@ -400,7 +399,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, sa
                             </div>
                         )}
                     </div>
-                    <div style={{ display: 'flex', gap: '1em' }}>
+                    <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
                         <div className="form-group">
                             <label>Atk</label>
                             <input
@@ -478,7 +477,7 @@ const GenericPokemonEditor: React.FC<GenericPokemonEditorProps> = ({ pokemon, sa
                     )}
 
                     <h3>Moves</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1em' }}>
+                    <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1em' }}>
                         {pokemon.moves.map((move, idx) => (
                             <div key={idx} className="form-group">
                                 <label>Move {idx + 1}</label>
