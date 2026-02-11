@@ -35,7 +35,7 @@ export class TDOffsets {
     // Money & Rank (Updated based on user scan)
     get HeldMoney(): number { return 0x96D6 * 8 + 5; }
     get StoredMoney(): number { return 0x96DC * 8 + 5; }
-    get ExplorerRank(): number { return 0x9722 * 8; }
+    get ExplorerRank(): number { return 0x9702 * 8; }
 }
 
 export class TDSave implements SaveFile {
