@@ -169,7 +169,9 @@ export class RBSave implements SaveFile {
                 33
             );
             const item = new RBHeldItem(itemBits);
-            this.heldItems.push(item);
+            if (item.isValid) {
+                this.heldItems.push(item);
+            }
         }
     }
 

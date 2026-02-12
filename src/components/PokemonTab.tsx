@@ -52,9 +52,9 @@ export const PokemonTab: React.FC<PokemonTabProps> = ({ save, onUpdate, language
                 });
             }
 
-            // Filter storedPokemon to exclude those in Special Episode Party
+            // Filter storedPokemon to exclude those in Special Episode Party AND invalid ones
             const filteredStored = save.storedPokemon.map((p, i) => ({ pkm: p, index: i }))
-                .filter(({ index }) => !spActiveIndices.has(index));
+                .filter(({ pkm, index }) => pkm.isValid && !spActiveIndices.has(index));
 
             return (
                 <>

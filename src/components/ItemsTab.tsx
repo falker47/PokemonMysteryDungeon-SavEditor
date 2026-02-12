@@ -15,11 +15,18 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({ save, onUpdate, language }) 
     const { t } = useTranslation(language);
     const [view, setView] = useState<'held' | 'storage' | 'spEpisode' | 'friendRescue'>('held');
     const isSky = save.gameType === 'Sky';
+    const isRB = save.gameType === 'RescueTeam';
     const skySave = isSky ? (save as SkySave) : null;
 
     const getItems = (): GenericItem[] => {
         switch (view) {
-            case 'storage': return save.storedItems;
+            case 'storage': {
+                // RB uses a bank model (fixed slots, index=ID). Filter to only show items with quantity > 0.
+                if (isRB) {
+                    return save.storedItems.filter(item => item.parameter > 0);
+                }
+                return save.storedItems;
+            }
             case 'spEpisode': return skySave ? skySave.spEpisodeHeldItems : [];
             case 'friendRescue': return skySave ? skySave.friendRescueHeldItems : [];
             case 'held':
@@ -30,6 +37,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({ save, onUpdate, language }) 
 
     const currentItems = getItems();
     const isStorage = view === 'storage';
+    const showQty = isStorage && isRB;
 
     return (
         <div className="card">
@@ -51,7 +59,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({ save, onUpdate, language }) 
                         <tr style={{ textAlign: 'left', borderBottom: '1px solid #555' }}>
                             <th>{t('Slot')}</th>
                             <th>{t('Item')}</th>
-
+                            {showQty && <th>{t('Qty') || 'Qty'}</th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -63,6 +71,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({ save, onUpdate, language }) 
                                 onUpdate={onUpdate}
                                 isHeld={!isStorage}
                                 isStorage={isStorage}
+                                showQty={showQty}
                             />
                         ))}
                     </tbody>
@@ -78,9 +87,10 @@ interface ItemRowProps {
     onUpdate: () => void;
     isHeld: boolean;
     isStorage?: boolean;
+    showQty?: boolean;
 }
 
-const ItemRow: React.FC<ItemRowProps> = ({ index, item, onUpdate }) => {
+const ItemRow: React.FC<ItemRowProps> = ({ index, item, onUpdate, showQty }) => {
     return (
         <tr style={{ borderBottom: '1px solid #333' }}>
             <td>{index + 1}</td>
@@ -93,6 +103,21 @@ const ItemRow: React.FC<ItemRowProps> = ({ index, item, onUpdate }) => {
                     }}
                 />
             </td>
+            {showQty && (
+                <td>
+                    <input
+                        type="number"
+                        min={0}
+                        max={999}
+                        value={item.parameter}
+                        onChange={(e) => {
+                            item.parameter = parseInt(e.target.value) || 0;
+                            onUpdate();
+                        }}
+                        style={{ width: '60px' }}
+                    />
+                </td>
+            )}
         </tr>
     );
 };
