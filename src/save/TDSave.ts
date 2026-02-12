@@ -2,6 +2,7 @@
 import { BitBlock } from '../utils/BitBlock';
 import { CharacterEncoding } from '../utils/CharacterEncoding';
 import { TDHeldItem } from './TDItem';
+import { ExplorersItem } from './ExplorersItem';
 import { TDActivePokemon, TDStoredPokemon } from './TDPokemon';
 import { SaveFile, GenericItem } from './SaveFile';
 
@@ -32,7 +33,12 @@ export class TDOffsets {
     get ActivePokemonLength(): number { return 544; }
     get ActivePokemonCount(): number { return 4; }
 
-    // Money & Rank (Updated based on user scan)
+    // Stored Items (Kangaskhan Warehouse)
+    get StoredItemOffset(): number { return 0x8CF4 * 8 + 5; } // bit 288677
+    get StoredItemCount(): number { return 1000; }
+    get StoredItemBitWidth(): number { return 10; }
+
+    // Money & Rank
     get HeldMoney(): number { return 0x96D6 * 8 + 5; }
     get StoredMoney(): number { return 0x96DC * 8 + 5; }
     get ExplorerRank(): number { return 0x9702 * 8; }
@@ -58,7 +64,7 @@ export class TDSave implements SaveFile {
     public heldItems: TDHeldItem[] = [];
     public storedPokemon: TDStoredPokemon[] = [];
     public activePokemon: TDActivePokemon[] = [];
-    public storedItems: GenericItem[] = []; // Not implemented in TD yet, return empty
+    public storedItems: GenericItem[] = [];
 
     constructor(data: Uint8Array) {
         this.bits = new BitBlock(data);
@@ -80,6 +86,7 @@ export class TDSave implements SaveFile {
 
         this.loadGeneral(baseOffset);
         this.loadItems(baseOffset);
+        this.loadStoredItems(baseOffset);
         this.loadStoredPokemon(baseOffset);
         this.loadActivePokemon(baseOffset);
     }
@@ -104,6 +111,21 @@ export class TDSave implements SaveFile {
             const item = new TDHeldItem(itemBits);
             if (item.isValid) {
                 this.heldItems.push(item);
+            } else {
+                break;
+            }
+        }
+    }
+
+    private loadStoredItems(baseOffset: number): void {
+        this.storedItems = [];
+        const start = baseOffset * 8 + this.offsets.StoredItemOffset;
+        const bitWidth = this.offsets.StoredItemBitWidth;
+
+        for (let i = 0; i < this.offsets.StoredItemCount; i++) {
+            const id = this.bits.getInt(0, start + i * bitWidth, bitWidth);
+            if (id > 0) {
+                this.storedItems.push(new ExplorersItem(id, 0));
             } else {
                 break;
             }
@@ -143,19 +165,13 @@ export class TDSave implements SaveFile {
     public toByteArray(): Uint8Array {
         this.saveGeneral(0);
         this.saveItems(0);
+        this.saveStoredItems(0);
         this.saveStoredPokemon(0);
         this.saveActivePokemon(0);
 
         // Copy primary save to backup save
-        // Legacy copy: BackupSaveStart + 4, length: BackupSaveStart - 4
-        // Corrected logic: Use BITS. BackupSaveStart is BYTES.
         const backupStartBit = this.offsets.BackupSaveStart * 8;
-        const copyLength = backupStartBit - 4; // Copy 4 bits to BackupStart*8
-        // Wait, SkySave copy logic:
-        // const copyLength = backupStartBit - 4;
-        // const sourceData = this.bits.getRange(4, copyLength);
-        // this.bits.setRange(backupStartBit + 4, copyLength, sourceData);
-        // This preserves bits 0-3 of the backup area (checksum part).
+        const copyLength = backupStartBit - 4;
 
         const sourceData = this.bits.getRange(4, copyLength);
         this.bits.setRange(backupStartBit + 4, copyLength, sourceData);
@@ -167,7 +183,7 @@ export class TDSave implements SaveFile {
         this.secondaryChecksum = this.calculateSecondaryChecksum();
         this.bits.setUInt(this.offsets.BackupSaveStart, 0, 32, this.secondaryChecksum);
 
-        this.quicksaveChecksum = this.calculateQuicksaveChecksum(); // Calculate what's currently there
+        this.quicksaveChecksum = this.calculateQuicksaveChecksum();
         this.bits.setUInt(this.offsets.QuicksaveStart, 0, 32, this.quicksaveChecksum);
 
         return this.bits.toByteArray();
@@ -196,6 +212,19 @@ export class TDSave implements SaveFile {
         }
     }
 
+    private saveStoredItems(baseOffset: number): void {
+        const start = baseOffset * 8 + this.offsets.StoredItemOffset;
+        const bitWidth = this.offsets.StoredItemBitWidth;
+
+        for (let i = 0; i < this.offsets.StoredItemCount; i++) {
+            if (i < this.storedItems.length) {
+                this.bits.setInt(0, start + i * bitWidth, bitWidth, this.storedItems[i].id);
+            } else {
+                this.bits.setInt(0, start + i * bitWidth, bitWidth, 0);
+            }
+        }
+    }
+
     private saveStoredPokemon(baseOffset: number): void {
         for (let i = 0; i < this.offsets.StoredPokemonCount; i++) {
             const pkmOffset = baseOffset * 8 + this.offsets.StoredPokemonOffset + i * this.offsets.StoredPokemonLength;
@@ -204,10 +233,6 @@ export class TDSave implements SaveFile {
             } else {
                 const empty = new TDStoredPokemon();
                 empty.isValid = false;
-                // Empty TDStoredPokemon has bit 0 as true in constructor, but here we want invalid?
-                // Legacy: `new BitBlock(Offsets.StoredPokemonLength)` which is all 0s.
-                // TDStoredPokemon ctor sets bit 0 to true.
-                // We should write strict 0s.
                 this.bits.setRange(pkmOffset, this.offsets.StoredPokemonLength, new BitBlock(this.offsets.StoredPokemonLength));
             }
         }
@@ -254,10 +279,8 @@ export class TDSave implements SaveFile {
 
     public scanForValue(value: number, bitLength: number): number[] {
         const results: number[] = [];
-        // Scan likely range for General data (around 0x9000-0xA000 bytes)
-        // This covers the Team Name area and likely location of Money/Rank
         const startBit = 0x9000 * 8;
-        const endBit = 0xA000 * 8; // 4KB range * 8 bits
+        const endBit = 0xA000 * 8;
 
         for (let i = startBit; i < endBit; i++) {
             if (this.bits.getInt(0, i, bitLength) === value) {
