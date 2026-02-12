@@ -67,7 +67,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({ options, val
                     textOverflow: 'ellipsis'
                 }}
             >
-                {selectedOption ? `${selectedOption.name} (${selectedOption.id})` : (value === 0 ? "Nothing" : `Unknown (${value})`)}
+                {selectedOption ? `${selectedOption.name} (${selectedOption.id})` : (value === 0 ? "None" : `Unknown (${value})`)}
             </div>
 
             {
@@ -102,21 +102,6 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({ options, val
                             }}
                         />
                         <div style={{ overflowY: 'auto', flex: 1 }}>
-                            <div
-                                onClick={() => {
-                                    onChange(0);
-                                    setIsOpen(false);
-                                }}
-                                style={{
-                                    padding: '5px',
-                                    cursor: 'pointer',
-                                    borderBottom: '1px solid #444',
-                                    backgroundColor: value === 0 ? '#444' : 'transparent'
-                                }}
-                                className="searchable-option"
-                            >
-                                Nothing
-                            </div>
                             {filteredOptions.length > 0 ? (
                                 filteredOptions.map(opt => (
                                     <div
