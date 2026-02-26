@@ -1,7 +1,7 @@
 import { BitBlock } from '../utils/BitBlock';
 import { CharacterEncoding } from '../utils/CharacterEncoding';
 import { RBHeldItem, RBStoredItem } from './RBItem';
-import { RBStoredPokemon } from './RBPokemon';
+import { RBStoredPokemon, RBActivePokemon } from './RBPokemon';
 import { SaveFile } from './SaveFile';
 
 export class RBOffsets {
@@ -28,6 +28,10 @@ export class RBOffsets {
     get HeldItemOffset(): number { return 0x4CF0 * 8; }
     get HeldItemCount(): number { return 20; }
     get HeldItemLength(): number { return 23; }
+    get HeldItemIDOffset(): number { return 3; }
+    get HeldItemIDLength(): number { return 9; }
+    get HeldItemQtyOffset(): number { return 12; }
+    get HeldItemQtyLength(): number { return 7; }
 
     // Stored Pokemon
     get StoredPokemonOffset(): number { return (0x5B3 * 8 + 3) - (323 * 9); }
@@ -38,6 +42,11 @@ export class RBOffsets {
     // Let's re-read legacy files carefully.
 
     get StoredPokemonCount(): number { return 407 + 6; }
+
+    // Active Pokemon (Party)
+    get ActivePokemonOffset(): number { return 0x4226 * 8 + 6; }
+    get ActivePokemonCount(): number { return 4; }
+    get ActivePokemonLength(): number { return 544; }
 }
 
 export class RBEUOffsets extends RBOffsets {
@@ -45,9 +54,10 @@ export class RBEUOffsets extends RBOffsets {
     get HeldMoneyOffset(): number { return 0x4E70 * 8; }
     get StoredMoneyOffset(): number { return 0x4E73 * 8; }
     get RescuePointsOffset(): number { return 0x4ED7 * 8; }
-    get StoredItemOffset(): number { return 0x4D2F * 8 - 2; }
+    get StoredItemOffset(): number { return 158070; } // Discovered via brute force Bit matching 0x4D36 + 6
     get HeldItemOffset(): number { return 0x4CF4 * 8; }
     get StoredPokemonOffset(): number { return (0x5B7 * 8 + 3) - (323 * 9); }
+    get ActivePokemonOffset(): number { return 0x422a * 8 + 6; }
 }
 
 export class RBSave implements SaveFile {
@@ -86,6 +96,7 @@ export class RBSave implements SaveFile {
     public storedItems: RBStoredItem[] = [];
     public heldItems: RBHeldItem[] = [];
     public storedPokemon: RBStoredPokemon[] = [];
+    public activePokemon: RBActivePokemon[] = [];
 
     constructor(data: Uint8Array) {
         this.bits = new BitBlock(data);
@@ -129,6 +140,7 @@ export class RBSave implements SaveFile {
         this.loadGeneral(baseOffset);
         this.loadItems(baseOffset);
         this.loadStoredPokemon(baseOffset);
+        this.loadActivePokemon(baseOffset);
     }
 
     private loadGeneral(baseOffset: number): void {
@@ -155,6 +167,7 @@ export class RBSave implements SaveFile {
 
         for (let i = 0; i < this.offsets.StoredItemCount; i++) {
             const quantity = block.getInt(0, i * 10, 10);
+            if (i < 10) console.log(`RB Stored ${i} (ID ${i + 1}): Qty=${quantity} (Bits: ${block.getRange(i * 10, 10).bits.map(b => b ? '1' : '0').join('')})`);
             // Bank Logic: ID = i + 1, Value = Quantity
             // We push ALL items so user can edit quantity from 0 to >0
             this.storedItems.push(new RBStoredItem(i + 1, quantity));
@@ -165,12 +178,26 @@ export class RBSave implements SaveFile {
 
         for (let i = 0; i < 20; i++) {
             const itemBits = this.bits.getRange(
-                baseOffset * 8 + this.offsets.HeldItemOffset + (i * 33),
-                33
+                baseOffset * 8 + this.offsets.HeldItemOffset + (i * this.offsets.HeldItemLength),
+                this.offsets.HeldItemLength
             );
             const item = new RBHeldItem(itemBits);
             if (item.isValid) {
                 this.heldItems.push(item);
+            }
+        }
+    }
+
+    private loadActivePokemon(baseOffset: number): void {
+        this.activePokemon = [];
+        for (let i = 0; i < this.offsets.ActivePokemonCount; i++) {
+            const pkmBits = this.bits.getRange(
+                baseOffset * 8 + this.offsets.ActivePokemonOffset + i * this.offsets.ActivePokemonLength,
+                this.offsets.ActivePokemonLength
+            );
+            const pkm = new RBActivePokemon(pkmBits);
+            if (pkm.isValid) {
+                this.activePokemon.push(pkm);
             }
         }
     }
@@ -210,6 +237,7 @@ export class RBSave implements SaveFile {
         this.saveGeneral(0);
         this.saveItems(0);
         this.saveStoredPokemon(0);
+        this.saveActivePokemon(0);
 
         // Copy backup
         const backupStartBit = this.offsets.BackupSaveStart * 8;
@@ -249,22 +277,38 @@ export class RBSave implements SaveFile {
 
         const block = new BitBlock(this.offsets.StoredItemCount * 10);
         for (let i = 0; i < this.offsets.StoredItemCount; i++) {
-            const qty = compiledItems[i + 1] || 0;
+            const displayId = i + 1;
+            const qty = compiledItems[displayId] || 0;
             block.setInt(0, i * 10, 10, qty);
         }
+
         // Stored items are global
         this.bits.setRange(this.offsets.StoredItemOffset, this.offsets.StoredItemCount * 10, block);
 
         // Held items handle baseOffset
         for (let i = 0; i < 20; i++) {
-            const itemOffset = baseOffset * 8 + this.offsets.HeldItemOffset + (i * 33);
+            const itemOffset = baseOffset * 8 + this.offsets.HeldItemOffset + (i * this.offsets.HeldItemLength);
             if (i < this.heldItems.length) {
                 const itemBits = this.heldItems[i].toBitBlock();
-                const bits33 = new BitBlock(33);
-                for (let b = 0; b < 23; b++) bits33.setBit(b, itemBits.getBit(b));
-                this.bits.setRange(itemOffset, 33, bits33);
+                const bitsStride = new BitBlock(this.offsets.HeldItemLength);
+                for (let b = 0; b < this.offsets.HeldItemLength; b++) bitsStride.setBit(b, itemBits.getBit(b));
+                this.bits.setRange(itemOffset, this.offsets.HeldItemLength, bitsStride);
             } else {
-                this.bits.setRange(itemOffset, 33, new BitBlock(33));
+                this.bits.setRange(itemOffset, this.offsets.HeldItemLength, new BitBlock(this.offsets.HeldItemLength));
+            }
+        }
+    }
+
+    private saveActivePokemon(baseOffset: number): void {
+        for (let i = 0; i < this.offsets.ActivePokemonCount; i++) {
+            const pkmOffset = baseOffset * 8 + this.offsets.ActivePokemonOffset + i * this.offsets.ActivePokemonLength;
+            if (i < this.activePokemon.length) {
+                const pkmBits = this.activePokemon[i].toBitBlock();
+                this.bits.setRange(pkmOffset, this.offsets.ActivePokemonLength, pkmBits);
+            } else {
+                // Keep existing data or clear? Usually better to keep if invalid? 
+                // But typically we'd clear the ID at least.
+                // For now, if fewer than 4, we don't zero the rest to avoid corruption if count is elsewhere.
             }
         }
     }
@@ -332,14 +376,12 @@ export class RBSave implements SaveFile {
 
     public scanForName(name: string): number[] {
         if (!name || name.length < 2) return [];
-        // Brute force scan for the name encoded bytes
-        // Rescue Team uses 8000+ encoding? Or standard?
-        // It uses CharacterEncoding.encode.
         try {
             const encoded = CharacterEncoding.encode(name, name.length);
             const foundOffsets: number[] = [];
 
-            // Search byte by byte
+            // Rescue Team names are often stored at bit-offsets or with padding
+            // We search byte by byte for the encoded string
             const fileBytes = this.bits.toByteArray();
 
             for (let i = 0; i < fileBytes.length - encoded.length; i++) {
@@ -365,71 +407,91 @@ export class RBSave implements SaveFile {
         const results: string[] = [];
         const bitCount = this.bits.count;
 
-        // Find all bit offsets for each ID
-        const idBitOffsets: number[][] = [];
-
-        for (const targetId of appxIDs) {
-            const offsets: number[] = [];
-            // optimization: verify we can read 8 bits
-            for (let i = 0; i < bitCount - 8; i++) {
-                if (this.bits.getInt(0, i, 8) === targetId) {
-                    offsets.push(i);
-                }
-            }
-            idBitOffsets.push(offsets);
-        }
-
-        if (idBitOffsets.length < 2) return ["Error: Need at least 2 IDs"];
-
-        // Match sequences
-        // We look for: Offset(ID1) = Offset(ID0) + Stride
-        // Stride is likely consistent.
-        // We allow a search window for the stride: [16 bits to 48 bits]
-
-        // const validStrides = new Map<number, number>(); // Stride -> Count
-
-        const startOffsets = idBitOffsets[0];
-
-        for (const start of startOffsets) {
-            // Can we find the next ID within window?
-            let currentPos = start;
-            //   let currentStride = 0;
-            //   let chainFound = true;
-
-            // Try to find the SECOND item to establish a stride
-            const nextOffsets = idBitOffsets[1];
-            // Look for offsets in range [currentPos + 16, currentPos + 48]
-            // Standard strides: 23 (packed), 33 (unpacked??), 32?
-            const candidates = nextOffsets.filter(o => (o - currentPos) >= 16 && (o - currentPos) <= 48);
-
-            for (const nextPos of candidates) {
-                const stride = nextPos - currentPos;
-
-                // Verify the rest of the chain with this stride
-                let chainValid = true;
-                let testPos = nextPos;
-
-                for (let k = 2; k < appxIDs.length; k++) {
-                    const kOffsets = idBitOffsets[k];
-                    const expectedPos = testPos + stride;
-                    if (kOffsets.includes(expectedPos)) {
-                        testPos = expectedPos;
-                    } else {
-                        chainValid = false;
-                        break;
+        // We try 8, 9, 10, 11, 12, and 16 bit IDs
+        for (const idLen of [8, 9, 10, 11, 12, 16]) {
+            const idBitOffsets: number[][] = [];
+            for (const targetId of appxIDs) {
+                const offsets: number[] = [];
+                for (let i = 0; i < bitCount - idLen; i++) {
+                    if (this.bits.getInt(0, i, idLen) === targetId) {
+                        offsets.push(i);
                     }
                 }
+                idBitOffsets.push(offsets);
+            }
 
-                if (chainValid) {
-                    const byteOffset = Math.floor(start / 8);
-                    const bitRemainder = start % 8;
-                    results.push(`MATCH: Start Bit ${start} (Byte 0x${byteOffset.toString(16)} + ${bitRemainder}). Stride detected: ${stride} bits.`);
-                    if (results.length > 20) return results;
+            if (idBitOffsets[0].length === 0) continue;
+
+            // Try all possible strides
+            const startOffsets = idBitOffsets[0];
+            for (const start of startOffsets) {
+                // Try many internal offsets
+                for (let internalOffset = 0; internalOffset < 32; internalOffset++) {
+                    const potentialBase = start - internalOffset;
+                    if (potentialBase < 0) continue;
+
+                    // Common strides: 16, 23, 24, 31, 32, 33, 40, 48, 64
+                    for (const stride of [16, 23, 24, 31, 32, 33, 40, 48, 64]) {
+                        let chainValid = true;
+                        for (let k = 1; k < appxIDs.length; k++) {
+                            const expectedPos = potentialBase + k * stride + internalOffset;
+                            if (!idBitOffsets[k].includes(expectedPos)) {
+                                chainValid = false;
+                                break;
+                            }
+                        }
+                        if (chainValid) {
+                            const byteOffset = Math.floor(potentialBase / 8);
+                            const bitRemainder = potentialBase % 8;
+                            results.push(`MATCH: ${idLen}-bit ID. Base Bit ${potentialBase} (Byte 0x${byteOffset.toString(16)} + ${bitRemainder}). Stride: ${stride}, ID @ Bit ${internalOffset}`);
+                            if (results.length > 30) return results;
+                        }
+                    }
                 }
             }
         }
 
-        if (results.length === 0) return ["No bit-level matches found."];
+        if (results.length === 0) return ["No matches found. Try scanning for DIFFERENT IDs (ensure they are in Bag)."];
+        return results;
+    }
+
+    public scanForMoney(amount: number): string[] {
+        const results: string[] = [];
+        const fileBytes = this.bits.toByteArray();
+
+        for (let i = 0; i < fileBytes.length - 3; i++) {
+            const valLE = fileBytes[i] | (fileBytes[i + 1] << 8) | (fileBytes[i + 2] << 16);
+            if (valLE === amount) results.push(`MONEY (LE): 0x${i.toString(16)}`);
+            const valBE = (fileBytes[i] << 16) | (fileBytes[i + 1] << 8) | fileBytes[i + 2];
+            if (valBE === amount) results.push(`MONEY (BE): 0x${i.toString(16)}`);
+        }
+
+        return results.length > 0 ? results : ["No money matches found."];
+    }
+
+    public scanForPokemon(level: number, speciesId: number): string[] {
+        const results: string[] = [];
+        const bitCount = this.bits.count;
+
+        // Search for Level (7 bits) then Species (9 bits)
+        // Or Level (8 bits) then Species (16 bits)?
+
+        const scan = (lvlLen: number, spLen: number, gap: number) => {
+            for (let i = 0; i < bitCount - (lvlLen + spLen + gap); i++) {
+                if (this.bits.getInt(0, i, lvlLen) === level &&
+                    this.bits.getInt(0, i + lvlLen + gap, spLen) === speciesId) {
+                    const byteOffset = Math.floor(i / 8);
+                    const bitRemainder = i % 8;
+                    results.push(`POKEMON: Lvl(${lvlLen}b) + Sp(${spLen}b) @ 0x${byteOffset.toString(16)}+${bitRemainder}. Gap: ${gap}b`);
+                }
+            }
+        };
+
+        scan(7, 9, 0); // Standard RB: Lvl(7), Sp(9)
+        scan(8, 16, 0); // 16-bit species?
+        scan(7, 9, 1); // Maybe a flag between?
+
+        if (results.length === 0) return ["No pokemon matches found."];
         return results;
     }
 }

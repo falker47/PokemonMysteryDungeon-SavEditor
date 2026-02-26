@@ -25,6 +25,8 @@ export class RBHeldItem implements GenericItem {
             this.flag5 = bits.getBit(5);
             this.flag6 = bits.getBit(6);
             this.flag7 = bits.getBit(7);
+
+            // True layout: Qty inside bits 8-14 (7 bits), ID inside bits 15-22 (8 bits)
             this.parameter = bits.getInt(0, 8, 7);
             this.id = bits.getInt(0, 15, 8);
         }
@@ -40,7 +42,11 @@ export class RBHeldItem implements GenericItem {
         bits.setBit(5, this.flag5);
         bits.setBit(6, this.flag6);
         bits.setBit(7, this.flag7);
+
+        // Qty inside bits 8-14 (7 bits)
         bits.setInt(0, 8, 7, this.parameter);
+
+        // Save direct ID without shifts
         bits.setInt(0, 15, 8, this.id);
         return bits;
     }

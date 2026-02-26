@@ -1,0 +1,4 @@
+Pocket money at: 20080 (0x4e70)
+Bank money at: 20083 (0x4e73)
+Pocket money at: 44656 (0xae70)
+Bank money at: 44659 (0xae73)

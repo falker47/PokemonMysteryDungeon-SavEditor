@@ -271,6 +271,46 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ save, onUpdate, language
                                 }}>{t('ScanItemsButton')}</button>
                             </div>
                         </div>
+
+                        <div className="form-group" style={{ marginTop: '10px', borderTop: '1px solid #444', paddingTop: '10px' }}>
+                            <label>Scan for Active Pokemon (Leader)</label>
+                            <p style={{ fontSize: '0.8em', color: '#aaa' }}>
+                                Enter Level and Species ID of your current leader.<br />
+                                Example: <b>15, 258</b> (Mudkip Lvl 15)
+                            </p>
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                <input type="number" placeholder="Lvl" id="scanPkmLvl" style={{ width: '80px' }} />
+                                <input type="number" placeholder="Species ID" id="scanPkmID" style={{ width: '100px' }} />
+                                <button onClick={() => {
+                                    const lvl = parseInt((document.getElementById('scanPkmLvl') as HTMLInputElement).value);
+                                    const spId = parseInt((document.getElementById('scanPkmID') as HTMLInputElement).value);
+                                    if (isNaN(lvl) || isNaN(spId)) return;
+                                    if ((save as RBSave).scanForPokemon) {
+                                        const res = (save as RBSave).scanForPokemon(lvl, spId);
+                                        alert(res.join('\n'));
+                                    }
+                                }}>Scan Pokemon</button>
+                            </div>
+                        </div>
+
+                        <div className="form-group" style={{ marginTop: '10px', borderTop: '1px solid #444', paddingTop: '10px' }}>
+                            <label>Scan for Money (Held/Stored)</label>
+                            <p style={{ fontSize: '0.8em', color: '#aaa' }}>
+                                Enter the exact amount of money you have in Wallet or Bank.<br />
+                                Example: <b>1500</b>
+                            </p>
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                <input type="number" placeholder="Amount" id="scanMoneyAmount" style={{ width: '120px' }} />
+                                <button onClick={() => {
+                                    const amount = parseInt((document.getElementById('scanMoneyAmount') as HTMLInputElement).value);
+                                    if (isNaN(amount)) return;
+                                    if ((save as RBSave).scanForMoney) {
+                                        const res = (save as RBSave).scanForMoney(amount);
+                                        alert(res.join('\n'));
+                                    }
+                                }}>Scan Money</button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

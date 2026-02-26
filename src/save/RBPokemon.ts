@@ -60,18 +60,14 @@ export class RBStoredPokemon implements GenericPokemon {
     public moves: RBAttack[] = [];
     public name: string = "";
 
+    protected extraBits: BitBlock | null = null;
+
     get speciesId(): number { return this.id; }
     set speciesId(val: number) { this.id = val; }
 
     get nickname(): string { return this.name; }
     set nickname(val: string) { this.name = val; }
 
-    // RBStoredPokemon does not strictly show "IsValid" bit logic in class, 
-    // but wrapper getter uses "id > 0".
-
-    // isValid is already a getter in existing code?
-    // "get isValid(): boolean { return this.id > 0; }" exists at bottom.
-    // I need to add setter for interface compliance.
     set isValid(val: boolean) {
         if (!val) {
             this.id = 0;
@@ -104,13 +100,17 @@ export class RBStoredPokemon implements GenericPokemon {
 
             const nameBytes = bits.getRange(243, 80).toByteArray();
             this.name = CharacterEncoding.decode(nameBytes);
+
+            if (bits.count > 323) {
+                this.extraBits = bits.getRange(323, bits.count - 323);
+            }
         } else {
             this.moves = [new RBAttack(), new RBAttack(), new RBAttack(), new RBAttack()];
         }
     }
 
     toBitBlock(): BitBlock {
-        const bits = new BitBlock(RBStoredPokemon.bitLength);
+        const bits = new BitBlock(323);
         bits.setInt(0, 0, 7, this.level);
         bits.setInt(0, 7, 9, this.id);
         bits.setInt(0, 16, 7, this.metAt);
@@ -133,6 +133,13 @@ export class RBStoredPokemon implements GenericPokemon {
         const nameBlock = new BitBlock(nameBytes);
         bits.setRange(243, 80, nameBlock);
 
+        if (this.extraBits) {
+            const fullBlock = new BitBlock(bits.count + this.extraBits.count);
+            fullBlock.setRange(0, bits.count, bits);
+            fullBlock.setRange(bits.count, this.extraBits.count, this.extraBits);
+            return fullBlock;
+        }
+
         return bits;
     }
 
@@ -140,3 +147,8 @@ export class RBStoredPokemon implements GenericPokemon {
         return this.id > 0;
     }
 }
+
+export class RBActivePokemon extends RBStoredPokemon {
+    public static override readonly bitLength: number = 544; // 0x44 bytes
+}
+

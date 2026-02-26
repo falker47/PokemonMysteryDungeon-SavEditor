@@ -1,0 +1,28 @@
+
+--- Reading items at 0x4cf0 ---
+Slot 0: Exists=0, ID=0, Qty=0
+Slot 1: Exists=0, ID=64, Qty=0
+Slot 2: Exists=0, ID=77, Qty=0
+Slot 3: Exists=0, ID=80, Qty=0
+Slot 4: Exists=0, ID=79, Qty=0
+
+--- Reading items at 0x4cf4 ---
+Slot 0: Exists=1, ID=0, Qty=56
+Slot 1: Exists=1, ID=0, Qty=16
+Slot 2: Exists=1, ID=0, Qty=120
+Slot 3: Exists=1, ID=0, Qty=16
+Slot 4: Exists=1, ID=0, Qty=56
+
+--- Reading items at 0x4cf8 ---
+Slot 0: Exists=0, ID=16, Qty=5
+Slot 1: Exists=0, ID=504, Qty=4
+Slot 2: Exists=0, ID=16, Qty=5
+Slot 3: Exists=0, ID=440, Qty=4
+Slot 4: Exists=0, ID=144, Qty=5
+
+--- Reading items at 0x4cfc ---
+Slot 0: Exists=1, ID=4, Qty=0
+Slot 1: Exists=0, ID=5, Qty=0
+Slot 2: Exists=0, ID=4, Qty=0
+Slot 3: Exists=0, ID=5, Qty=0
+Slot 4: Exists=0, ID=5, Qty=0
