@@ -6,9 +6,11 @@ import { TDSave } from './TDSave';
 type SaveFactory = (data: Uint8Array) => SaveFile;
 
 const SAVE_FACTORIES: SaveFactory[] = [
+    // Rescue Team must be checked first: its fixture can satisfy the broader
+    // Time/Darkness checksum heuristic even though the layout is different.
+    (data) => new RBSave(data),
     (data) => new SkySave(data),
     (data) => new TDSave(data),
-    (data) => new RBSave(data),
 ];
 
 export function detectSaveFile(data: Uint8Array): SaveFile | null {
