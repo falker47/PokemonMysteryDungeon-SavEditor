@@ -7,7 +7,7 @@ function isJunkEntry(name: string): boolean {
 }
 
 // Pokemon form suffixes keyed by game data ID
-const POKEMON_FORM_SUFFIXES: Record<number, string> = {
+const EXPLORERS_POKEMON_FORM_SUFFIXES: Record<number, string> = {
     // Unown A-Z, !, ?
     201: 'A', 202: 'B', 203: 'C', 204: 'D', 205: 'E', 206: 'F', 207: 'G',
     208: 'H', 209: 'I', 210: 'J', 211: 'K', 212: 'L', 213: 'M', 214: 'N',
@@ -35,6 +35,20 @@ const POKEMON_FORM_SUFFIXES: Record<number, string> = {
     529: 'Altered', 536: 'Origin',
     // Shaymin
     534: 'Land', 535: 'Sky',
+};
+
+const RESCUE_POKEMON_FORM_SUFFIXES: Record<number, string> = {
+    // Unown A-Z, !, ?
+    201: 'A', 202: 'B', 203: 'C', 204: 'D', 205: 'E', 206: 'F', 207: 'G',
+    208: 'H', 209: 'I', 210: 'J', 211: 'K', 212: 'L', 213: 'M', 214: 'N',
+    215: 'O', 216: 'P', 217: 'Q', 218: 'R', 219: 'S', 220: 'T', 221: 'U',
+    222: 'V', 223: 'W', 224: 'X', 225: 'Y', 226: 'Z', 415: '!', 416: '?',
+    // Castform
+    376: 'Normal', 377: 'Sunny', 378: 'Rainy', 379: 'Snowy',
+    // Kecleon
+    380: 'Green',
+    // Deoxys
+    414: 'Normal', 417: 'Attack', 418: 'Defense', 419: 'Speed',
 };
 
 export class DataManager {
@@ -95,10 +109,14 @@ export class DataManager {
             const text = await response.text();
             const parsed = this.parseResource(text);
 
-            // Disambiguate Pokemon forms with suffixes
+            // Form IDs differ between Explorers and Rescue Team.
+            const formSuffixes = this.currentGameType === 'RescueTeam'
+                ? RESCUE_POKEMON_FORM_SUFFIXES
+                : EXPLORERS_POKEMON_FORM_SUFFIXES;
+
             for (const idStr of Object.keys(parsed)) {
                 const id = parseInt(idStr);
-                const suffix = POKEMON_FORM_SUFFIXES[id];
+                const suffix = formSuffixes[id];
                 if (suffix) {
                     parsed[id] = `${parsed[id]} (${suffix})`;
                 }
