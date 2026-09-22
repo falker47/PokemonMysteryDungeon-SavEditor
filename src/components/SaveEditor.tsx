@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SkySave } from '../save/SkySave';
-import { TDSave } from '../save/TDSave';
-import { RBSave } from '../save/RBSave';
 import { SaveFile } from '../save/SaveFile';
+import { detectSaveFile } from '../save/detectSaveFile';
 import { FileUpload } from './FileUpload';
 import { GeneralTab } from './GeneralTab';
 import { ItemsTab } from './ItemsTab';
@@ -37,52 +35,24 @@ export const SaveEditor: React.FC = () => {
     }, []);
 
     const handleFileLoaded = (data: Uint8Array, name: string) => {
-        try {
-            // Checksum validation as heuristic
+        const detectedSave = detectSaveFile(data);
 
-            try {
-                const sky = new SkySave(data);
-                if (sky.isPrimaryChecksumValid() || sky.isSecondaryChecksumValid()) {
-                    console.log("Detected Explorers of Sky save");
-                    DataManager.getInstance().loadData('Sky').then(() => setUpdateKey(k => k + 1));
-                    setSaveFile(sky);
-                    setFileName(name);
-                    return;
-                }
-            } catch (e) { console.log("Not Sky", e); }
-
-            try {
-                const td = new TDSave(data);
-                if (td.isPrimaryChecksumValid() || td.isSecondaryChecksumValid()) {
-                    console.log("Detected Explorers of Time/Darkness save");
-                    DataManager.getInstance().loadData('TimeDarkness').then(() => setUpdateKey(k => k + 1));
-                    setSaveFile(td);
-                    setFileName(name);
-                    return;
-                }
-            } catch (e) { console.log("Not Time/Darkness", e); }
-
-            try {
-                const rb = new RBSave(data);
-                if (rb.isPrimaryChecksumValid() || rb.isSecondaryChecksumValid()) {
-                    console.log("Detected Rescue Team save");
-                    DataManager.getInstance().loadData('RescueTeam').then(() => setUpdateKey(k => k + 1));
-                    setSaveFile(rb);
-                    setFileName(name);
-                    return;
-                }
-            } catch (e) { console.log("Not Rescue Team", e); }
-
-            // Fallback
-            console.warn("Could not validate checksums. Defaulting to Sky.");
-            const defaultSave = new SkySave(data);
-            setSaveFile(defaultSave);
-            setFileName(name);
-
-        } catch (e) {
-            console.error(e);
+        if (!detectedSave) {
+            console.warn("Unsupported or invalid save file: no supported checksum matched.");
             alert(t('LoadError'));
+            return;
         }
+
+        setDataLoaded(false);
+        setSaveFile(detectedSave);
+        setFileName(name);
+
+        DataManager.getInstance()
+            .loadData(detectedSave.gameType)
+            .then(() => {
+                setDataLoaded(true);
+                setUpdateKey(k => k + 1);
+            });
     };
 
     const handleLanguageChange = async (lang: string) => {

@@ -1,51 +1,79 @@
 # PMD Save Editor
 
-A modern web-based save editor for Pokémon Mystery Dungeon: Rescue Team (Blue/Red) and Explorers of Sky/Time/Darkness.
+<p align="center">
+  <img src="public/hero-preview16-9.jpg" alt="PMD Save Editor preview" width="900">
+</p>
 
-## Credits & Legacy
+A browser-based save editor for **Pokémon Mystery Dungeon: Red/Blue Rescue Team** and **Explorers of Time, Darkness, and Sky**.
 
-This project is a modern refactor and continuation of the logic found in the [SkyEditor.SaveEditor](https://github.com/evandixon/SkyEditor.SaveEditor) project by **Evan Dixon**. We owe a great deal to the original research and implementation done by the SkyEditor community.
+**Live app:** https://pokemonmysterydungeon-saveditor.netlify.app/
 
-## Features
+## What it edits
 
-- **Rescue Team Support**: Compatible with Blue Rescue Team and Red Rescue Team save files.
-- **Explorers Support**: Comprehensive editing for Explorers of Sky, Time, and Darkness.
-- **Team Editing**: Modify Pokémon stats, moves, nicknames, and more.
-- **Inventory Management**: Add, remove, or edit items in your storage and bag.
-- **Save Integrity**: Automatic checksum calculation and backup management.
+The current web editor exposes:
 
-## Getting Started
+- team name, money, rescue/rank points, and selected game-specific settings;
+- bag and storage contents;
+- recruited and active Pokémon, including species, nickname, level, stats, IQ, moves, and Ginseng boosts;
+- Sky-specific Special Episode data supported by the current parser.
 
-### Prerequisites
+All processing is local to the browser. Export writes the edited data back into the loaded save, refreshes the game's internal backup block where implemented, and recalculates the relevant checksums.
 
-- [Node.js](https://nodejs.org/) (v16 or higher)
-- [npm](https://www.npmjs.com/)
+> **Keep an external copy of your original save.** The editor updates the save file's own primary/backup structures; it does not create a separate backup file for you.
 
-### Installation
+## Supported games and validation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Falker/PMD-Save-Editor.git
-   cd PMD-Save-Editor
-   ```
+| Game family | Parser/writer | Fixture in repo | Current validation |
+| --- | --- | --- | --- |
+| Red / Blue Rescue Team | Yes | `BRT.sav` | detection, checksum validation, no-op round trip, Rescue-specific Pokémon ID regression |
+| Explorers of Sky | Yes | `EoS.sav` | legacy expected values, checksum validation, no-op round trip |
+| Explorers of Time / Darkness | Yes, shared layout | `EoT.sav` | Time legacy expected values, checksum validation, no-op round trip |
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+Darkness uses the shared Time/Darkness implementation, but this repository currently contains a Time fixture rather than a separate Darkness fixture.
 
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+Unsupported or malformed files are rejected when none of the supported layouts has a valid primary or backup checksum; the editor no longer silently assumes Explorers of Sky.
 
-## Development
+### Rescue Team species IDs
 
-The project is built using:
-- **React** with **TypeScript**
-- **Vite** for the build pipeline
-- **Vanilla CSS** for styling
+Rescue Team and Explorers do **not** use the same internal Pokémon numbering. The modern editor uses the Rescue Team mapping preserved by the legacy SkyEditor implementation. For example, Rescue Team ID `288` is **Zigzagoon**, while `285` is **Swampert**. This mapping is covered by the verification script because a wrong shared table can make a correctly stored Pokémon appear as another species in the UI.
 
-## License
+## Run locally
 
-This project is licensed under the MIT License - see the LICENSE file for details. (Based on SkyEditor legacy).
+Requirements: Node.js 20+ and npm.
+
+```bash
+git clone https://github.com/falker47/PokemonMysteryDungeon-SavEditor.git
+cd PokemonMysteryDungeon-SavEditor
+npm ci
+npm run dev
+```
+
+Create a production build:
+
+```bash
+npm run build
+```
+
+Run the save-format regression checks:
+
+```bash
+npm run verify:saves
+```
+
+The verification command exercises the bundled `BRT.sav`, `EoS.sav`, and `EoT.sav` fixtures and checks that a no-op export remains readable with valid primary and backup checksums and preserves the editable data model.
+
+## Architecture
+
+- **React + TypeScript** for the UI and editor model
+- **Vite** for development and production builds
+- save-format implementations under [`src/save/`](src/save/)
+- localized game resources under [`public/resources/`](public/resources/)
+- preserved SkyEditor source, resources, and historical tests under [`legacy/`](legacy/)
+
+## Provenance and licensing
+
+This project is a modern refactor/continuation of **SkyEditor.SaveEditor** by Evan Dixon and contributors. The legacy source is intentionally preserved for traceability.
+
+See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for provenance details and [`legacy/LICENSE`](legacy/LICENSE) for the MIT license retained with the legacy code.
+
+The repository root currently does **not** declare a blanket license for all modern code, so the previous README statement that the entire repository was MIT-licensed was too broad.
