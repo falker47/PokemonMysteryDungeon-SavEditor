@@ -11,7 +11,7 @@ import { useTranslation } from '../hooks/useTranslation';
 const Footer = () => (
     <footer style={{ marginTop: '1.5rem', textAlign: 'center', padding: '1rem', fontSize: '0.9rem', opacity: 0.8 }}>
         <a
-            href="https://falker47.github.io/Nexus-portfolio/"
+            href="https://falker47.github.io/"
             target="_blank"
             rel="noopener noreferrer"
             className="footer-link"
