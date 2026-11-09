@@ -20,6 +20,8 @@ The current web editor exposes:
 All processing is local to the browser. Export writes the edited data back into the loaded save, refreshes the game's internal backup block where implemented, and recalculates the relevant checksums.
 
 > **Keep an external copy of your original save.** The editor updates the save file's own primary/backup structures; it does not create a separate backup file for you.
+>
+> **Explorers of Sky limitation:** A save with an invalid primary checksum but a valid internal backup checksum may pass format detection, yet the current Sky parser still reads the primary data block. Do not rely on the editor to recover a corrupted primary save. Keep an untouched external backup before editing.
 
 ## Supported games and validation
 
@@ -60,7 +62,9 @@ Run the save-format regression checks:
 npm run verify:saves
 ```
 
-The verification command exercises the bundled `BRT.sav`, `EoS.sav`, and `EoT.sav` fixtures and checks that a no-op export remains readable with valid primary and backup checksums and preserves the editable data model.
+The verification command exercises the bundled `BRT.sav`, `EoS.sav`, and `EoT.sav` fixtures. It checks game detection, no-op export/reopen, valid primary and backup checksums after export, selected legacy expected values, and the Rescue Team Pokémon ID mapping.
+
+The round-trip comparison covers the fields explicitly included in the verification script. These tests do not establish that every editable field, every modified-value round trip, or the resulting save's behavior in the game is correct.
 
 ## Architecture
 
